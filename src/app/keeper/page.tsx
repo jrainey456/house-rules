@@ -47,80 +47,47 @@ export default function KeeperPage() {
 
     // Fetch current message and maintain SSE connection
     useEffect(() => {
-        let isActive = true;
+        const es = new EventSource('/api/stream');
         
-        async function connectToStream() {
+        es.onmessage = (e: MessageEvent) => {
             try {
-                const response = await fetch('/api/stream');
-                
-                if (!response.body) return;
-                
-                const reader = response.body.getReader();
-                const decoder = new TextDecoder();
-                
-                while (isActive) {
-                    const { done, value } = await reader.read();
-                    if (done) break;
+                const data = JSON.parse(e.data);
+                if (data.type === 'message') {
+                    setCurrent(data.message);
+                } else if (data.type === 'player-sessions-update') {
+                    console.log('Received session update:', data.sessions);
+                    const trimmedSessions = (data.sessions || []).map((id: string) => 
+                        typeof id === 'string' ? id.slice(-8) : id
+                    );
+                    setPlayerSessions(trimmedSessions);
                     
-                    const chunk = decoder.decode(value);
-                    const lines = chunk.split('\n');
-                    
-                    for (const line of lines) {
-                        if (line.startsWith('data: ')) {
-                            try {
-                                const data = JSON.parse(line.slice(6));
-                                if (data.type === 'message') {
-                                    setCurrent(data.message);
-                                } else if (data.type === 'player-sessions-update') {
-                                    console.log('Received session update:', data.sessions);
-                                    // Trim session IDs to last 8 characters for display
-                                    const trimmedSessions = (data.sessions || []).map((id: string) => 
-                                        typeof id === 'string' ? id.slice(-8) : id
-                                    );
-                                    setPlayerSessions(trimmedSessions);
-                                    
-                                    // Update selected players - remove any that are no longer connected
-                                    setSelectedPlayers(prev => {
-                                        const newSelected = new Set<string>();
-                                        trimmedSessions.forEach((sessionId: string) => {
-                                            if (prev.has(sessionId)) {
-                                                newSelected.add(sessionId);
-                                            }
-                                        });
-                                        return newSelected;
-                                    });
-                                    
-                                    // Update current targets - remove any that are no longer connected
-                                    setCurrentTargets(prev => {
-                                        return prev.filter((sessionId: string) => trimmedSessions.includes(sessionId));
-                                    });
-                                } else if (data.type === 'player-message-states') {
-                                    console.log('Received message states:', data.states);
-                                    setPlayerMessageStates(data.states || []);
-                                }
-                            } catch (error) {
-                                console.error('Error parsing SSE message:', error);
+                    setSelectedPlayers(prev => {
+                        const newSelected = new Set<string>();
+                        trimmedSessions.forEach((sessionId: string) => {
+                            if (prev.has(sessionId)) {
+                                newSelected.add(sessionId);
                             }
-                        }
-                    }
+                        });
+                        return newSelected;
+                    });
+                    
+                    setCurrentTargets(prev => {
+                        return prev.filter((sessionId: string) => trimmedSessions.includes(sessionId));
+                    });
+                } else if (data.type === 'player-message-states') {
+                    console.log('Received message states:', data.states);
+                    setPlayerMessageStates(data.states || []);
                 }
             } catch (error) {
-                console.error('SSE connection error:', error);
-                if (isActive) {
-                    // Retry connection after delay
-                    setTimeout(connectToStream, 2000);
-                }
+                console.error('Error parsing SSE message:', error);
             }
-        }
+        };
         
-        connectToStream();
+        es.onerror = () => es.close();
         
-        // Fetch initial player sessions
         fetchPlayerSessions();
         
-        return () => {
-            isActive = false;
-        };
+        return () => es.close();
     }, []);
 
     async function fetchPlayerSessions() {

@@ -11,8 +11,9 @@ export async function GET(req: NextRequest) {
 
     const stream = new ReadableStream({
         start(controller) {
-            // Get session IDs from headers (for tab-based sessions) or cookies (for keeper)
-            playerSessionId = req.headers.get('x-player-session-id') || req.cookies.get('playerSession')?.value || null;
+            // Get session IDs from query params (for tab sessions) or cookies (for keeper)
+            const url = new URL(req.url);
+            playerSessionId = url.searchParams.get('sessionId') || req.cookies.get('playerSession')?.value || null;
             const keeperSessionId = req.cookies.get('keeperSession')?.value || null;
             const isKeeper = keeperSessionId === store.keeperSessionId;
             

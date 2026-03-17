@@ -89,56 +89,19 @@ export default function PlayerPage() {
         const sessionId = sessionStorage.getItem('playerSessionId');
         if (!sessionId) return;
 
-        let isActive = true;
+        // Use EventSource with session ID in query parameter
+        const es = new EventSource(`/api/stream?sessionId=${sessionId}`);
         
-        async function connectToStream() {
+        es.onmessage = (e: MessageEvent) => {
             try {
-                const headers: Record<string, string> = {};
-                if (sessionId) {
-                    headers['X-Player-Session-Id'] = sessionId;
+                const data = JSON.parse(e.data);
+                if (data.type === 'message') {
+                    handleMessage(data.message);
                 }
-                
-                const response = await fetch('/api/stream', {
-                    headers
-                });
-                
-                if (!response.body) return;
-                
-                const reader = response.body.getReader();
-                const decoder = new TextDecoder();
-                
-                while (isActive) {
-                    const { done, value } = await reader.read();
-                    if (done) break;
-                    
-                    const chunk = decoder.decode(value);
-                    const lines = chunk.split('\n');
-                    
-                    for (const line of lines) {
-                        if (line.startsWith('data: ')) {
-                            try {
-                                const data = JSON.parse(line.slice(6));
-                                if (data.type === 'message') {
-                                    handleMessage(data.message);
-                                }
-                            } catch { }
-                        }
-                    }
-                }
-            } catch (error) {
-                console.error('SSE connection error:', error);
-                if (isActive) {
-                    // Retry connection after delay
-                    setTimeout(connectToStream, 2000);
-                }
-            }
-        }
-        
-        connectToStream();
-        
-        return () => {
-            isActive = false;
+            } catch { }
         };
+        es.onerror = () => es.close();
+        return () => es.close();
     }, [isInitialized]);
 
     async function handleLeave() {
