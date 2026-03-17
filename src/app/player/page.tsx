@@ -20,21 +20,17 @@ export default function PlayerPage() {
     useEffect(() => {
         async function ensurePlayerSession() {
             try {
-                // Try to get existing session or create new one
-                const response = await fetch('/api/auth', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ role: 'player' })
-                });
+                // Check if we already have a session ID for this tab
+                let sessionId = sessionStorage.getItem('playerSessionId');
                 
-                if (response.ok) {
-                    const data = await response.json();
-                    console.log('Player session initialized:', data.sessionId?.slice(-8));
-                    setIsInitialized(true);
-                } else {
-                    console.error('Failed to initialize player session');
-                    router.push('/');
+                if (!sessionId) {
+                    // Generate new session ID for this tab
+                    sessionId = crypto.randomUUID();
+                    sessionStorage.setItem('playerSessionId', sessionId);
                 }
+                
+                console.log('Player session initialized:', sessionId.slice(-8));
+                setIsInitialized(true);
             } catch (error) {
                 console.error('Error initializing player session:', error);
                 router.push('/');
@@ -90,21 +86,61 @@ export default function PlayerPage() {
         // Only start SSE connection after session is initialized
         if (!isInitialized) return;
 
-        const es = new EventSource('/api/stream');
-        es.onmessage = (e: MessageEvent) => {
+        const sessionId = sessionStorage.getItem('playerSessionId');
+        if (!sessionId) return;
+
+        let isActive = true;
+        
+        async function connectToStream() {
             try {
-                const data = JSON.parse(e.data);
-                if (data.type === 'message') {
-                    handleMessage(data.message);
+                const response = await fetch('/api/stream', {
+                    headers: {
+                        'X-Player-Session-Id': sessionId
+                    }
+                });
+                
+                if (!response.body) return;
+                
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                
+                while (isActive) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    
+                    const chunk = decoder.decode(value);
+                    const lines = chunk.split('\n');
+                    
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            try {
+                                const data = JSON.parse(line.slice(6));
+                                if (data.type === 'message') {
+                                    handleMessage(data.message);
+                                }
+                            } catch { }
+                        }
+                    }
                 }
-            } catch { }
+            } catch (error) {
+                console.error('SSE connection error:', error);
+                if (isActive) {
+                    // Retry connection after delay
+                    setTimeout(connectToStream, 2000);
+                }
+            }
+        }
+        
+        connectToStream();
+        
+        return () => {
+            isActive = false;
         };
-        es.onerror = () => es.close();
-        return () => es.close();
     }, [isInitialized]);
 
     async function handleLeave() {
-        await fetch('/api/auth', { method: 'DELETE' });
+        // Clean up session storage
+        sessionStorage.removeItem('playerSessionId');
         router.push('/');
     }
 
