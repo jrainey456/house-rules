@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import FullscreenButton from '@/components/FullscreenButton';
 
 const TYPEWRITER_DELAY = 180; // ms per character
 
@@ -102,6 +103,21 @@ export default function PlayerPage() {
                     ))}
                 </h1>
             )}
+
+            {/* Fullscreen toggle button */}
+            <FullscreenButton
+                position="top-right"
+                style={{
+                    background: 'rgba(0, 0, 0, 0.5)',
+                    border: '2px solid rgba(255, 255, 255, 0.2)',
+                    opacity: 0.6,
+                    fontSize: '1.2rem',
+                }}
+                onFullscreenChange={(isFullscreen) => {
+                    // Optional: You could add some visual feedback here
+                    console.log('Fullscreen changed:', isFullscreen);
+                }}
+            />
 
             <button
                 onClick={handleLeave}

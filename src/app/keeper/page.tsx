@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import FullscreenButton from '@/components/FullscreenButton';
 
 const inputStyle: React.CSSProperties = {
     fontFamily: 'var(--font-special-elite), serif',
@@ -131,6 +132,17 @@ export default function KeeperPage() {
                     {status}
                 </p>
             )}
+
+            {/* Fullscreen toggle button */}
+            <FullscreenButton
+                position="top-right"
+                style={{
+                    background: 'rgba(0, 0, 0, 0.6)',
+                    border: '2px solid rgba(255, 255, 255, 0.3)',
+                    opacity: 0.7,
+                    fontSize: '1.2rem',
+                }}
+            />
 
             <button
                 onClick={handleLogout}
