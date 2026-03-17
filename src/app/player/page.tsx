@@ -93,10 +93,13 @@ export default function PlayerPage() {
         
         async function connectToStream() {
             try {
+                const headers: Record<string, string> = {};
+                if (sessionId) {
+                    headers['X-Player-Session-Id'] = sessionId;
+                }
+                
                 const response = await fetch('/api/stream', {
-                    headers: {
-                        'X-Player-Session-Id': sessionId
-                    }
+                    headers
                 });
                 
                 if (!response.body) return;
