@@ -1,7 +1,17 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Use webpack for both dev and production for stability
+  // Force webpack for stability
+  webpack: (config, { isServer }) => {
+    // Basic optimization for deployment
+    config.optimization = {
+      ...config.optimization,
+      splitChunks: {
+        chunks: 'all',
+      },
+    };
+    return config;
+  },
 };
 
 export default nextConfig;
