@@ -79,9 +79,12 @@ body::after {
   animation: glitch 10s 6.6s infinite;
 }
 
-.glitch::before,  .glitch::after,
-.glitch-b::before,.glitch-b::after,
-.glitch-c::before,.glitch-c::after {
+.glitch::before,
+.glitch::after,
+.glitch-b::before,
+.glitch-b::after,
+.glitch-c::before,
+.glitch-c::after {
   content: attr(data-text);
   position: absolute;
   top: 0;
@@ -92,20 +95,41 @@ body::after {
   pointer-events: none;
 }
 
-.glitch::before, .glitch-b::before, .glitch-c::before {
+.glitch::before,
+.glitch-b::before,
+.glitch-c::before {
   color: #ff0040;
 }
 
-.glitch::after, .glitch-b::after, .glitch-c::after {
+.glitch::after,
+.glitch-b::after,
+.glitch-c::after {
   color: #00ffff;
 }
 
-.glitch::before  { animation: glitch-before 10s infinite; }
-.glitch::after   { animation: glitch-after  10s infinite; }
-.glitch-b::before{ animation: glitch-before 10s 3.3s infinite; }
-.glitch-b::after { animation: glitch-after  10s 3.3s infinite; }
-.glitch-c::before{ animation: glitch-before 10s 6.6s infinite; }
-.glitch-c::after { animation: glitch-after  10s 6.6s infinite; }
+.glitch::before {
+  animation: glitch-before 10s infinite;
+}
+
+.glitch::after {
+  animation: glitch-after 10s infinite;
+}
+
+.glitch-b::before {
+  animation: glitch-before 10s 3.3s infinite;
+}
+
+.glitch-b::after {
+  animation: glitch-after 10s 3.3s infinite;
+}
+
+.glitch-c::before {
+  animation: glitch-before 10s 6.6s infinite;
+}
+
+.glitch-c::after {
+  animation: glitch-after 10s 6.6s infinite;
+}
 
 @keyframes glitch {
 
