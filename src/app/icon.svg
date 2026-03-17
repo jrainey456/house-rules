@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <pattern id="static" width="4" height="4" patternUnits="userSpaceOnUse">
+      <rect width="4" height="4" fill="#aaa"/>
+      <rect x="0" y="0" width="2" height="2" fill="#eee"/>
+      <rect x="2" y="2" width="2" height="2" fill="#eee"/>
+      <rect x="2" y="0" width="2" height="2" fill="#555"/>
+      <rect x="0" y="2" width="2" height="2" fill="#888"/>
+    </pattern>
+  </defs>
+  <!-- TV body -->
+  <rect x="4" y="12" width="56" height="40" rx="6" fill="#ddd"/>
+  <!-- Body shading -->
+  <rect x="4" y="12" width="56" height="40" rx="6" fill="url(#bodyGrad)"/>
+  <linearGradient id="bodyGrad" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="white" stop-opacity="0.5"/>
+    <stop offset="100%" stop-color="black" stop-opacity="0.15"/>
+  </linearGradient>
+  <!-- Screen bezel -->
+  <rect x="10" y="17" width="44" height="28" rx="4" fill="#bbb"/>
+  <!-- Static screen -->
+  <rect x="12" y="19" width="40" height="24" rx="3" fill="url(#static)"/>
+  <!-- Screen glare -->
+  <ellipse cx="24" cy="23" rx="9" ry="4" fill="white" opacity="0.2"/>
+  <!-- Knobs -->
+  <circle cx="20" cy="54" r="4" fill="#bbb" stroke="#999" stroke-width="1"/>
+  <circle cx="20" cy="54" r="1.5" fill="#888"/>
+  <circle cx="44" cy="54" r="4" fill="#bbb" stroke="#999" stroke-width="1"/>
+  <circle cx="44" cy="54" r="1.5" fill="#888"/>
+  <!-- Speaker dots -->
+  <circle cx="31" cy="54" r="1" fill="#aaa"/>
+  <circle cx="34" cy="54" r="1" fill="#aaa"/>
+  <circle cx="31" cy="57" r="1" fill="#aaa"/>
+  <circle cx="34" cy="57" r="1" fill="#aaa"/>
+  <!-- Antenna left -->
+  <line x1="24" y1="12" x2="14" y2="2" stroke="#aaa" stroke-width="2" stroke-linecap="round"/>
+  <!-- Antenna right -->
+  <line x1="40" y1="12" x2="50" y2="2" stroke="#aaa" stroke-width="2" stroke-linecap="round"/>
+  <!-- Feet -->
+  <rect x="12" y="52" width="8" height="4" rx="2" fill="#ccc"/>
+  <rect x="44" y="52" width="8" height="4" rx="2" fill="#ccc"/>
+</svg>
+
+
