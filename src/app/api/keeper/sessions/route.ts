@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
 
     // Get player message states
     const messageMap = new Map<string, string[]>();
-    store.playerSessions.forEach((playerSession, fullSessionId) => {
+    store.playerSessions.forEach((playerSession, fullSessionId: string) => {
         const trimmedId = fullSessionId.slice(-8);
         const message = playerSession.currentMessage;
         

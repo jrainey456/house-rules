@@ -67,7 +67,7 @@ export default function FullscreenButton({
     setIsFullscreen(fullscreenManager.isFullscreen());
 
     // Listen for fullscreen changes
-    const unsubscribe = fullscreenManager.addListener((fullscreen) => {
+    const unsubscribe = fullscreenManager.addListener((fullscreen: boolean) => {
       setIsFullscreen(fullscreen);
       onFullscreenChange?.(fullscreen);
     });

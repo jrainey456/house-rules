@@ -91,7 +91,7 @@ export default function PlayerPage() {
         if (!isInitialized) return;
 
         const es = new EventSource('/api/stream');
-        es.onmessage = (e) => {
+        es.onmessage = (e: MessageEvent) => {
             try {
                 const data = JSON.parse(e.data);
                 if (data.type === 'message') {
@@ -145,7 +145,7 @@ export default function PlayerPage() {
                     opacity: 0.6,
                     fontSize: '1.2rem',
                 }}
-                onFullscreenChange={(isFullscreen) => {
+                onFullscreenChange={(isFullscreen: boolean) => {
                     // Optional: You could add some visual feedback here
                     console.log('Fullscreen changed:', isFullscreen);
                 }}

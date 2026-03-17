@@ -49,7 +49,7 @@ export default function KeeperPage() {
     useEffect(() => {
         const es = new EventSource('/api/stream');
         
-        es.onmessage = (e) => {
+        es.onmessage = (e: MessageEvent) => {
             try {
                 const data = JSON.parse(e.data);
                 if (data.type === 'message') {
@@ -65,7 +65,7 @@ export default function KeeperPage() {
                     // Update selected players - remove any that are no longer connected
                     setSelectedPlayers(prev => {
                         const newSelected = new Set<string>();
-                        trimmedSessions.forEach(sessionId => {
+                        trimmedSessions.forEach((sessionId: string) => {
                             if (prev.has(sessionId)) {
                                 newSelected.add(sessionId);
                             }
@@ -75,7 +75,7 @@ export default function KeeperPage() {
                     
                     // Update current targets - remove any that are no longer connected
                     setCurrentTargets(prev => {
-                        return prev.filter(sessionId => trimmedSessions.includes(sessionId));
+                        return prev.filter((sessionId: string) => trimmedSessions.includes(sessionId));
                     });
                 } else if (data.type === 'player-message-states') {
                     console.log('Received message states:', data.states);
@@ -86,7 +86,7 @@ export default function KeeperPage() {
             }
         };
         
-        es.onerror = (error) => {
+        es.onerror = (error: Event) => {
             console.error('SSE connection error:', error);
             es.close();
         };
@@ -269,7 +269,7 @@ export default function KeeperPage() {
                         fontSize: '1vw',
                         letterSpacing: '0.1em'
                     }}>
-                        {playerSessions.map((sessionId) => (
+                        {playerSessions.map((sessionId: string) => (
                             <label 
                                 key={sessionId}
                                 style={{
@@ -362,7 +362,7 @@ export default function KeeperPage() {
                                 <span style={{ fontWeight: 'bold' }}>
                                     PLAYERS ({state.players.length}):
                                 </span>
-                                {state.players.map((sessionId, playerIndex) => (
+                                {state.players.map((sessionId: string, playerIndex: number) => (
                                     <span key={sessionId}>
                                         <span 
                                             style={{
