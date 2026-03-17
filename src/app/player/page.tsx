@@ -11,9 +11,38 @@ export default function PlayerPage() {
     const [visibleCount, setVisibleCount] = useState(0);     // how many chars are visible
     const [animMode, setAnimMode] = useState<'in' | 'out' | 'idle'>('idle');
     const [glitchReady, setGlitchReady] = useState(false);
+    const [isInitialized, setIsInitialized] = useState(false);
     const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const pendingRef = useRef<string | null>(null);           // next word queued after erase
     const router = useRouter();
+
+    // Ensure player has a session ID
+    useEffect(() => {
+        async function ensurePlayerSession() {
+            try {
+                // Try to get existing session or create new one
+                const response = await fetch('/api/auth', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ role: 'player' })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('Player session initialized:', data.sessionId?.slice(-8));
+                    setIsInitialized(true);
+                } else {
+                    console.error('Failed to initialize player session');
+                    router.push('/');
+                }
+            } catch (error) {
+                console.error('Error initializing player session:', error);
+                router.push('/');
+            }
+        }
+
+        ensurePlayerSession();
+    }, [router]);
 
     // Handle incoming messages
     function handleMessage(msg: string) {
@@ -58,6 +87,9 @@ export default function PlayerPage() {
     }, [animMode, visibleCount, displayText.length]);
 
     useEffect(() => {
+        // Only start SSE connection after session is initialized
+        if (!isInitialized) return;
+
         const es = new EventSource('/api/stream');
         es.onmessage = (e) => {
             try {
@@ -69,7 +101,7 @@ export default function PlayerPage() {
         };
         es.onerror = () => es.close();
         return () => es.close();
-    }, []);
+    }, [isInitialized]);
 
     async function handleLeave() {
         await fetch('/api/auth', { method: 'DELETE' });

@@ -1,7 +1,15 @@
+interface PlayerSession {
+    id: string;
+    connectedAt: Date;
+    send: (data: string) => void;
+    currentMessage: string; // Track what message this player currently has
+}
+
 interface Store {
     keeperSessionId: string | null;
     message: string;
     clients: Set<(data: string) => void>;
+    playerSessions: Map<string, PlayerSession>;
 }
 
 declare global {
@@ -14,6 +22,7 @@ if (!global.__houseRulesStore) {
         keeperSessionId: null,
         message: '',
         clients: new Set(),
+        playerSessions: new Map(),
     };
 }
 
