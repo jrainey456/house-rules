@@ -17,9 +17,7 @@ export async function POST(req: NextRequest) {
         if (password !== KEEPER_PASSWORD) {
             return NextResponse.json({ error: 'Wrong password' }, { status: 401 });
         }
-        if (store.keeperSessionId) {
-            return NextResponse.json({ error: 'A Keeper is already active' }, { status: 409 });
-        }
+        // Override any existing keeper session
         const sessionId = crypto.randomUUID();
         store.keeperSessionId = sessionId;
         const res = NextResponse.json({ ok: true });
