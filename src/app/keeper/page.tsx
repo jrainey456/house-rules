@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import FullscreenButton from '@/components/FullscreenButton';
+import FullscreenButton from '../../components/FullscreenButton';
 
 const inputStyle: React.CSSProperties = {
     fontFamily: 'var(--font-special-elite), serif',

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import FullscreenButton from '@/components/FullscreenButton';
+import FullscreenButton from '../../components/FullscreenButton';
 
 const TYPEWRITER_DELAY = 180; // ms per character
 

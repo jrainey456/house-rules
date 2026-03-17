@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { fullscreenManager } from '@/lib/fullscreen';
+import { fullscreenManager } from '../lib/fullscreen';
 
 interface FullscreenButtonProps {
   /** Additional CSS styles for the button */
@@ -147,5 +147,3 @@ export default function FullscreenButton({
     </button>
   );
 }
-
-export { FullscreenButton };
