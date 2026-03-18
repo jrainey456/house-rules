@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Special_Elite } from "next/font/google";
 import "./globals.css";
 
+export const dynamic = "force-dynamic";
+
 const specialElite = Special_Elite({
   subsets: ["latin"],
   weight: "400",
