@@ -3,17 +3,22 @@ import { NextRequest } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
+function broadcastPlayerSessions() {
+    const sessionIds = Array.from(store.playerSessions.keys());
+    const data = JSON.stringify({ type: 'player-sessions-update', sessions: sessionIds });
+    store.clients.forEach(send => {
+        try { send(data); } catch { /* handled elsewhere */ }
+    });
+}
+
 export async function GET(req: NextRequest) {
     const encoder = new TextEncoder();
+    const sessionId = req.nextUrl.searchParams.get('sessionId');
     let clientSend: ((data: string) => void) | null = null;
     let heartbeatTimer: ReturnType<typeof setInterval> | null = null;
 
     const stream = new ReadableStream({
         start(controller) {
-            // Send current state immediately
-            const initial = JSON.stringify({ type: 'message', message: store.message || '' });
-            controller.enqueue(encoder.encode(`data: ${initial}\n\n`));
-
             clientSend = (data: string) => {
                 try {
                     controller.enqueue(encoder.encode(`data: ${data}\n\n`));
@@ -21,9 +26,28 @@ export async function GET(req: NextRequest) {
                     cleanup();
                 }
             };
-            
-            // Add to clients set
+
+            // Add to generic clients set (for keeper + all broadcasts)
             store.clients.add(clientSend);
+
+            // If this is a player connection, register the session
+            if (sessionId) {
+                store.playerSessions.set(sessionId, {
+                    id: sessionId,
+                    connectedAt: new Date(),
+                    send: clientSend,
+                    currentMessage: store.message || '',
+                });
+                // Broadcast updated player list to all clients (including keeper)
+                broadcastPlayerSessions();
+            }
+
+            // Send current message state to this client
+            const currentMsg = sessionId
+                ? (store.playerSessions.get(sessionId)?.currentMessage ?? '')
+                : (store.message || '');
+            const initial = JSON.stringify({ type: 'message', message: currentMsg });
+            controller.enqueue(encoder.encode(`data: ${initial}\n\n`));
 
             // Simple heartbeat to keep connection alive
             heartbeatTimer = setInterval(() => {
@@ -32,7 +56,7 @@ export async function GET(req: NextRequest) {
                 } catch {
                     cleanup();
                 }
-            }, 30000); // Longer interval for stability
+            }, 30000);
         },
         cancel() {
             cleanup();
@@ -42,6 +66,10 @@ export async function GET(req: NextRequest) {
     function cleanup() {
         if (clientSend) {
             store.clients.delete(clientSend);
+        }
+        if (sessionId) {
+            store.playerSessions.delete(sessionId);
+            broadcastPlayerSessions();
         }
         if (heartbeatTimer) {
             clearInterval(heartbeatTimer);

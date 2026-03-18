@@ -9,7 +9,7 @@ body {
   background: #e8e0d0;
   color: black;
   position: relative;
-  animation: flicker 0.15s infinite;
+  animation: flicker 4s infinite;
 }
 
 /* Scanlines */

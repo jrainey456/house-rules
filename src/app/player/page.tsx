@@ -20,16 +20,15 @@ export default function PlayerPage() {
     useEffect(() => {
         async function ensurePlayerSession() {
             try {
-                // Check if we already have a session ID for this tab
+                // Check if we already have a session ID in localStorage
                 let sessionId = sessionStorage.getItem('playerSessionId');
                 
                 if (!sessionId) {
-                    // Generate new session ID for this tab
+                    // Generate new session ID per tab
                     sessionId = crypto.randomUUID();
-                    sessionStorage.setItem('playerSessionId', sessionId);
+                sessionStorage.setItem('playerSessionId', sessionId);
                 }
                 
-                console.log('Player session initialized:', sessionId.slice(-8));
                 setIsInitialized(true);
             } catch (error) {
                 console.error('Error initializing player session:', error);
@@ -105,7 +104,7 @@ export default function PlayerPage() {
     }, [isInitialized]);
 
     async function handleLeave() {
-        // Clean up session storage
+        // Clean up local storage
         sessionStorage.removeItem('playerSessionId');
         router.push('/');
     }
@@ -146,10 +145,6 @@ export default function PlayerPage() {
                     border: '2px solid rgba(255, 255, 255, 0.2)',
                     opacity: 0.6,
                     fontSize: '1.2rem',
-                }}
-                onFullscreenChange={(isFullscreen: boolean) => {
-                    // Optional: You could add some visual feedback here
-                    console.log('Fullscreen changed:', isFullscreen);
                 }}
             />
 

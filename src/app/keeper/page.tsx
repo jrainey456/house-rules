@@ -55,7 +55,6 @@ export default function KeeperPage() {
                 if (data.type === 'message') {
                     setCurrent(data.message);
                 } else if (data.type === 'player-sessions-update') {
-                    console.log('Received session update:', data.sessions);
                     const trimmedSessions = (data.sessions || []).map((id: string) => 
                         typeof id === 'string' ? id.slice(-8) : id
                     );
@@ -75,7 +74,6 @@ export default function KeeperPage() {
                         return prev.filter((sessionId: string) => trimmedSessions.includes(sessionId));
                     });
                 } else if (data.type === 'player-message-states') {
-                    console.log('Received message states:', data.states);
                     setPlayerMessageStates(data.states || []);
                 }
             } catch (error) {
@@ -96,7 +94,6 @@ export default function KeeperPage() {
             if (res.ok) {
                 const data = await res.json();
                 const sessionIds = data.sessions.map((s: any) => s.id);
-                console.log('Fetched initial sessions:', sessionIds);
                 setPlayerSessions(sessionIds);
                 // Auto-select all players initially
                 setSelectedPlayers(new Set(sessionIds));

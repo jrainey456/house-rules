@@ -134,7 +134,6 @@ class FullscreenManager {
       await this.releaseWakeLock();
       
       this.wakeLock = await (navigator as any).wakeLock.request('screen') as CustomWakeLockSentinel;
-      console.log('Screen wake lock acquired');
       return true;
     } catch (error) {
       console.error('Failed to acquire wake lock:', error);
@@ -149,7 +148,6 @@ class FullscreenManager {
     if (this.wakeLock && !this.wakeLock.released) {
       try {
         await this.wakeLock.release();
-        console.log('Screen wake lock released');
       } catch (error) {
         console.error('Failed to release wake lock:', error);
       }
