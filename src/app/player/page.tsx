@@ -12,23 +12,45 @@ export default function PlayerPage() {
     const [animMode, setAnimMode] = useState<'in' | 'out' | 'idle'>('idle');
     const [glitchReady, setGlitchReady] = useState(false);
     const [isInitialized, setIsInitialized] = useState(false);
+    const [playerName, setPlayerName] = useState('');
+    const [nameInput, setNameInput] = useState('');
+    const [nameSubmitted, setNameSubmitted] = useState(false);
     const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const pendingRef = useRef<string | null>(null);           // next word queued after erase
     const router = useRouter();
 
     // Ensure player has a session ID
     useEffect(() => {
+        // Restore name from sessionStorage if already set
+        const storedName = sessionStorage.getItem('playerName');
+        if (storedName) {
+            setPlayerName(storedName);
+            setNameSubmitted(true);
+        }
+    }, []);
+
+    function handleNameSubmit() {
+        const trimmed = nameInput.trim().toUpperCase();
+        if (!trimmed) return;
+        sessionStorage.setItem('playerName', trimmed);
+        setPlayerName(trimmed);
+        setNameSubmitted(true);
+    }
+
+    // Initialize session once name is submitted
+    useEffect(() => {
+        if (!nameSubmitted) return;
         async function ensurePlayerSession() {
             try {
                 // Check if we already have a session ID in localStorage
                 let sessionId = sessionStorage.getItem('playerSessionId');
-                
+
                 if (!sessionId) {
                     // Generate new session ID per tab
                     sessionId = crypto.randomUUID();
-                sessionStorage.setItem('playerSessionId', sessionId);
+                    sessionStorage.setItem('playerSessionId', sessionId);
                 }
-                
+
                 setIsInitialized(true);
             } catch (error) {
                 console.error('Error initializing player session:', error);
@@ -37,7 +59,7 @@ export default function PlayerPage() {
         }
 
         ensurePlayerSession();
-    }, [router]);
+    }, [router, nameSubmitted]);
 
     // Handle incoming messages
     function handleMessage(msg: string) {
@@ -89,8 +111,8 @@ export default function PlayerPage() {
         if (!sessionId) return;
 
         // Use EventSource with session ID in query parameter
-        const es = new EventSource(`/api/stream?sessionId=${sessionId}`);
-        
+        const es = new EventSource(`/api/stream?sessionId=${sessionId}&playerName=${encodeURIComponent(playerName)}`);
+
         es.onmessage = (e: MessageEvent) => {
             try {
                 const data = JSON.parse(e.data);
@@ -101,11 +123,12 @@ export default function PlayerPage() {
         };
         es.onerror = () => es.close();
         return () => es.close();
-    }, [isInitialized]);
+    }, [isInitialized, playerName]);
 
     async function handleLeave() {
         // Clean up local storage
         sessionStorage.removeItem('playerSessionId');
+        sessionStorage.removeItem('playerName');
         router.push('/');
     }
 
@@ -118,54 +141,99 @@ export default function PlayerPage() {
             height: '100vh',
             fontFamily: 'var(--font-special-elite), serif',
         }}>
-            {displayText && (
-                <h1
-                    className={glitchReady ? 'glitch' : undefined}
-                    data-text={glitchReady ? displayText : undefined}
-                    style={{
-                        fontSize: '15vw',
-                        lineHeight: 1,
-                        textAlign: 'center',
-                        margin: 0,
-                    }}
-                >
-                    {displayText.split('').map((char, i) => (
-                        <span key={i} style={{ opacity: i < visibleCount ? 1 : 0 }}>
-                            {char}
-                        </span>
-                    ))}
-                </h1>
+            {/* Name prompt — shown before connecting */}
+            {!nameSubmitted && (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2rem' }}>
+                    <h2 style={{ fontSize: '4vw', letterSpacing: '0.3em', margin: 0 }}>ENTER YOUR NAME</h2>
+                    <input
+                        value={nameInput}
+                        onChange={e => setNameInput(e.target.value)}
+                        onKeyDown={e => e.key === 'Enter' && handleNameSubmit()}
+                        placeholder="NAME..."
+                        autoFocus
+                        style={{
+                            fontFamily: 'var(--font-special-elite), serif',
+                            fontSize: '3vw',
+                            padding: '0.4em 0.8em',
+                            border: '3px solid black',
+                            background: 'transparent',
+                            letterSpacing: '0.15em',
+                            outline: 'none',
+                            textAlign: 'center',
+                            width: '60vw',
+                            textTransform: 'uppercase',
+                        }}
+                    />
+                    <button
+                        onClick={handleNameSubmit}
+                        style={{
+                            fontFamily: 'var(--font-special-elite), serif',
+                            fontSize: '2vw',
+                            padding: '0.4em 1.4em',
+                            background: 'black',
+                            color: '#e8e0d0',
+                            border: '3px solid black',
+                            cursor: 'pointer',
+                            letterSpacing: '0.15em',
+                        }}
+                    >
+                        JOIN
+                    </button>
+                </div>
             )}
 
-            {/* Fullscreen toggle button */}
-            <FullscreenButton
-                position="top-right"
-                style={{
-                    background: 'rgba(0, 0, 0, 0.5)',
-                    border: '2px solid rgba(255, 255, 255, 0.2)',
-                    opacity: 0.6,
-                    fontSize: '1.2rem',
-                }}
-            />
+            {nameSubmitted && (
+                <>
+                    {displayText && (
+                        <h1
+                            className={glitchReady ? 'glitch' : undefined}
+                            data-text={glitchReady ? displayText : undefined}
+                            style={{
+                                fontSize: '15vw',
+                                lineHeight: 1,
+                                textAlign: 'center',
+                                margin: 0,
+                            }}
+                        >
+                            {displayText.split('').map((char, i) => (
+                                <span key={i} style={{ opacity: i < visibleCount ? 1 : 0 }}>
+                                    {char}
+                                </span>
+                            ))}
+                        </h1>
+                    )}
 
-            <button
-                onClick={handleLeave}
-                style={{
-                    position: 'fixed',
-                    bottom: '2rem',
-                    right: '2rem',
-                    fontFamily: 'var(--font-special-elite), serif',
-                    fontSize: '1vw',
-                    padding: '0.4em 1em',
-                    background: 'transparent',
-                    border: '2px solid black',
-                    cursor: 'pointer',
-                    letterSpacing: '0.1em',
-                    opacity: 0.4,
-                }}
-            >
-                LEAVE
-            </button>
+                    {/* Fullscreen toggle button */}
+                    <FullscreenButton
+                        position="top-right"
+                        style={{
+                            background: 'rgba(0, 0, 0, 0.5)',
+                            border: '2px solid rgba(255, 255, 255, 0.2)',
+                            opacity: 0.6,
+                            fontSize: '1.2rem',
+                        }}
+                    />
+
+                    <button
+                        onClick={handleLeave}
+                        style={{
+                            position: 'fixed',
+                            bottom: '2rem',
+                            right: '2rem',
+                            fontFamily: 'var(--font-special-elite), serif',
+                            fontSize: '1vw',
+                            padding: '0.4em 1em',
+                            background: 'transparent',
+                            border: '2px solid black',
+                            cursor: 'pointer',
+                            letterSpacing: '0.1em',
+                            opacity: 0.4,
+                        }}
+                    >
+                        LEAVE
+                    </button>
+                </>
+            )}
         </div>
     );
 }

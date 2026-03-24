@@ -66,6 +66,7 @@ export default function FullscreenButton({
     setIsSupported(fullscreenManager.isSupported());
     setIsFullscreen(fullscreenManager.isFullscreen());
 
+
     // Listen for fullscreen changes
     const unsubscribe = fullscreenManager.addListener((fullscreen: boolean) => {
       setIsFullscreen(fullscreen);
@@ -77,7 +78,7 @@ export default function FullscreenButton({
 
   const handleToggle = async () => {
     if (isToggling) return;
-    
+
     setIsToggling(true);
     try {
       await fullscreenManager.toggleFullscreen();

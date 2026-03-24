@@ -40,38 +40,40 @@ export default function KeeperPage() {
     const [current, setCurrent] = useState('');
     const [currentTargets, setCurrentTargets] = useState<string[]>([]);
     const [status, setStatus] = useState('');
-    const [playerSessions, setPlayerSessions] = useState<string[]>([]);
+    const [playerSessions, setPlayerSessions] = useState<Array<{ id: string, name: string }>>([]);
     const [selectedPlayers, setSelectedPlayers] = useState<Set<string>>(new Set());
-    const [playerMessageStates, setPlayerMessageStates] = useState<Array<{message: string, players: string[]}>>([]);
+    const [playerMessageStates, setPlayerMessageStates] = useState<Array<{ message: string, players: string[] }>>([]);
     const router = useRouter();
 
     // Fetch current message and maintain SSE connection
     useEffect(() => {
         const es = new EventSource('/api/stream');
-        
+
         es.onmessage = (e: MessageEvent) => {
             try {
                 const data = JSON.parse(e.data);
                 if (data.type === 'message') {
                     setCurrent(data.message);
                 } else if (data.type === 'player-sessions-update') {
-                    const trimmedSessions = (data.sessions || []).map((id: string) => 
-                        typeof id === 'string' ? id.slice(-8) : id
-                    );
-                    setPlayerSessions(trimmedSessions);
-                    
+                    const sessions: Array<{ id: string, name: string }> = (data.sessions || []).map((s: { id: string, name: string }) => ({
+                        id: typeof s.id === 'string' ? s.id.slice(-8) : s.id,
+                        name: s.name || 'UNKNOWN',
+                    }));
+                    const sessionIds = sessions.map(s => s.id);
+                    setPlayerSessions(sessions);
+
                     setSelectedPlayers(prev => {
                         const newSelected = new Set<string>();
-                        trimmedSessions.forEach((sessionId: string) => {
+                        sessionIds.forEach((sessionId: string) => {
                             if (prev.has(sessionId)) {
                                 newSelected.add(sessionId);
                             }
                         });
                         return newSelected;
                     });
-                    
+
                     setCurrentTargets(prev => {
-                        return prev.filter((sessionId: string) => trimmedSessions.includes(sessionId));
+                        return prev.filter((sessionId: string) => sessionIds.includes(sessionId));
                     });
                 } else if (data.type === 'player-message-states') {
                     setPlayerMessageStates(data.states || []);
@@ -80,11 +82,11 @@ export default function KeeperPage() {
                 console.error('Error parsing SSE message:', error);
             }
         };
-        
+
         es.onerror = () => es.close();
-        
+
         fetchPlayerSessions();
-        
+
         return () => es.close();
     }, []);
 
@@ -93,10 +95,10 @@ export default function KeeperPage() {
             const res = await fetch('/api/keeper/sessions');
             if (res.ok) {
                 const data = await res.json();
-                const sessionIds = data.sessions.map((s: any) => s.id);
-                setPlayerSessions(sessionIds);
+                const sessions = data.sessions.map((s: any) => ({ id: s.id, name: s.playerName || 'UNKNOWN' }));
+                setPlayerSessions(sessions);
                 // Auto-select all players initially
-                setSelectedPlayers(new Set(sessionIds));
+                setSelectedPlayers(new Set(sessions.map((s: { id: string }) => s.id)));
                 // Set initial message states
                 setPlayerMessageStates(data.messageStates || []);
             } else if (res.status === 401) {
@@ -127,14 +129,14 @@ export default function KeeperPage() {
             setSelectedPlayers(new Set());
         } else {
             // Not all selected, select all
-            setSelectedPlayers(new Set(playerSessions));
+            setSelectedPlayers(new Set(playerSessions.map(s => s.id)));
         }
     }
 
     async function handlePush() {
         const trimmed = input.trim();
         const selectedPlayersList = Array.from(selectedPlayers);
-        
+
         if (selectedPlayersList.length === 0) {
             setStatus('NO PLAYERS SELECTED');
             setTimeout(() => setStatus(''), 2000);
@@ -144,12 +146,12 @@ export default function KeeperPage() {
         const res = await fetch('/api/keeper/push', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                message: trimmed, 
-                targetPlayers: selectedPlayersList 
+            body: JSON.stringify({
+                message: trimmed,
+                targetPlayers: selectedPlayersList
             }),
         });
-        
+
         if (res.ok) {
             setCurrent(trimmed);
             setCurrentTargets(selectedPlayersList);
@@ -164,7 +166,7 @@ export default function KeeperPage() {
 
     async function handleClear() {
         const selectedPlayersList = Array.from(selectedPlayers);
-        
+
         if (selectedPlayersList.length === 0) {
             setStatus('NO PLAYERS SELECTED');
             setTimeout(() => setStatus(''), 2000);
@@ -174,9 +176,9 @@ export default function KeeperPage() {
         await fetch('/api/keeper/push', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                message: '', 
-                targetPlayers: selectedPlayersList 
+            body: JSON.stringify({
+                message: '',
+                targetPlayers: selectedPlayersList
             }),
         });
         setCurrent('');
@@ -208,10 +210,10 @@ export default function KeeperPage() {
             </h2>
 
             {/* Player Sessions Display with Selection */}
-            <div style={{ 
-                textAlign: 'center', 
+            <div style={{
+                textAlign: 'center',
                 marginBottom: '1rem',
-                opacity: 0.7 
+                opacity: 0.7
             }}>
                 <div style={{
                     display: 'flex',
@@ -220,9 +222,9 @@ export default function KeeperPage() {
                     gap: '1rem',
                     marginBottom: '0.5rem'
                 }}>
-                    <p style={{ 
-                        fontSize: '1.2vw', 
-                        letterSpacing: '0.15em', 
+                    <p style={{
+                        fontSize: '1.2vw',
+                        letterSpacing: '0.15em',
                         margin: '0',
                         fontWeight: 'bold'
                     }}>
@@ -256,37 +258,44 @@ export default function KeeperPage() {
                         fontSize: '1vw',
                         letterSpacing: '0.1em'
                     }}>
-                        {playerSessions.map((sessionId: string) => (
-                            <label 
-                                key={sessionId}
+                        {playerSessions.map((session) => (
+                            <label
+                                key={session.id}
                                 style={{
                                     display: 'flex',
                                     alignItems: 'center',
                                     gap: '0.3rem',
-                                    background: selectedPlayers.has(sessionId) ? 'rgba(0, 0, 0, 0.2)' : 'rgba(0, 0, 0, 0.05)',
-                                    border: selectedPlayers.has(sessionId) ? '2px solid rgba(0, 0, 0, 0.4)' : '1px solid rgba(0, 0, 0, 0.2)',
+                                    background: selectedPlayers.has(session.id) ? 'rgba(0, 0, 0, 0.2)' : 'rgba(0, 0, 0, 0.05)',
+                                    border: selectedPlayers.has(session.id) ? '2px solid rgba(0, 0, 0, 0.4)' : '1px solid rgba(0, 0, 0, 0.2)',
                                     padding: '0.3em 0.5em',
                                     borderRadius: '6px',
-                                    fontFamily: 'monospace',
                                     cursor: 'pointer',
                                     transition: 'all 0.2s ease',
                                 }}
-                                onClick={() => togglePlayerSelection(sessionId)}
+                                onClick={() => togglePlayerSelection(session.id)}
                             >
                                 <input
                                     type="checkbox"
-                                    checked={selectedPlayers.has(sessionId)}
-                                    onChange={() => togglePlayerSelection(sessionId)}
+                                    checked={selectedPlayers.has(session.id)}
+                                    onChange={() => togglePlayerSelection(session.id)}
                                     style={{
                                         margin: '0',
                                         transform: 'scale(1.2)',
                                         cursor: 'pointer',
                                     }}
                                 />
-                                <span style={{ 
-                                    fontWeight: selectedPlayers.has(sessionId) ? 'bold' : 'normal' 
+                                <span style={{
+                                    fontFamily: 'var(--font-special-elite), serif',
+                                    fontWeight: selectedPlayers.has(session.id) ? 'bold' : 'normal'
                                 }}>
-                                    {sessionId}
+                                    {session.name}
+                                </span>
+                                <span style={{
+                                    fontFamily: 'monospace',
+                                    fontSize: '0.75em',
+                                    opacity: 0.5,
+                                }}>
+                                    ({session.id})
                                 </span>
                             </label>
                         ))}
@@ -306,15 +315,15 @@ export default function KeeperPage() {
 
             {/* Active Messages Display */}
             {playerMessageStates.length > 0 && (
-                <div style={{ 
-                    textAlign: 'center', 
+                <div style={{
+                    textAlign: 'center',
                     marginBottom: '1rem',
                     opacity: 0.5,
                     maxWidth: '80vw'
                 }}>
-                    <p style={{ 
-                        fontSize: '1.2vw', 
-                        letterSpacing: '0.15em', 
+                    <p style={{
+                        fontSize: '1.2vw',
+                        letterSpacing: '0.15em',
                         margin: '0 0 0.5rem 0',
                         fontWeight: 'bold'
                     }}>
@@ -351,7 +360,7 @@ export default function KeeperPage() {
                                 </span>
                                 {state.players.map((sessionId: string, playerIndex: number) => (
                                     <span key={sessionId}>
-                                        <span 
+                                        <span
                                             style={{
                                                 background: 'rgba(0, 0, 0, 0.1)',
                                                 border: '1px solid rgba(0, 0, 0, 0.2)',

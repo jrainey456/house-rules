@@ -4,9 +4,9 @@ import { NextRequest } from 'next/server';
 export const dynamic = 'force-dynamic';
 
 function broadcastPlayerSessions() {
-    const sessionIds = Array.from(store.playerSessions.keys());
-    const data = JSON.stringify({ type: 'player-sessions-update', sessions: sessionIds });
-    store.clients.forEach(send => {
+    const sessions = Array.from(store.playerSessions.values()).map(s => ({ id: s.id, name: s.playerName }));
+    const data = JSON.stringify({ type: 'player-sessions-update', sessions });
+    store.keeperClients.forEach(send => {
         try { send(data); } catch { /* handled elsewhere */ }
     });
 }
@@ -14,6 +14,7 @@ function broadcastPlayerSessions() {
 export async function GET(req: NextRequest) {
     const encoder = new TextEncoder();
     const sessionId = req.nextUrl.searchParams.get('sessionId');
+    const playerName = req.nextUrl.searchParams.get('playerName') || 'UNKNOWN';
     let clientSend: ((data: string) => void) | null = null;
     let heartbeatTimer: ReturnType<typeof setInterval> | null = null;
 
@@ -27,19 +28,20 @@ export async function GET(req: NextRequest) {
                 }
             };
 
-            // Add to generic clients set (for keeper + all broadcasts)
-            store.clients.add(clientSend);
-
-            // If this is a player connection, register the session
             if (sessionId) {
+                // Player connection — register session only, not in generic clients
                 store.playerSessions.set(sessionId, {
                     id: sessionId,
+                    playerName,
                     connectedAt: new Date(),
                     send: clientSend,
                     currentMessage: store.message || '',
                 });
-                // Broadcast updated player list to all clients (including keeper)
                 broadcastPlayerSessions();
+            } else {
+                // Keeper connection — track in keeperClients for broadcasts
+                store.clients.add(clientSend);
+                store.keeperClients.add(clientSend);
             }
 
             // Send current message state to this client
@@ -66,6 +68,7 @@ export async function GET(req: NextRequest) {
     function cleanup() {
         if (clientSend) {
             store.clients.delete(clientSend);
+            store.keeperClients.delete(clientSend);
         }
         if (sessionId) {
             store.playerSessions.delete(sessionId);

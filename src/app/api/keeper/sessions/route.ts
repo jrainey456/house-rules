@@ -12,6 +12,7 @@ export async function GET(req: NextRequest) {
     const sessions = Array.from(store.playerSessions.entries()).map(([id, session]) => ({
         id: id.slice(-8), // Show last 8 characters for display
         fullId: id,
+        playerName: session.playerName,
         connectedAt: session.connectedAt.toISOString(),
         connectedFor: Math.floor((Date.now() - session.connectedAt.getTime()) / 1000), // seconds
         currentMessage: session.currentMessage
@@ -22,19 +23,19 @@ export async function GET(req: NextRequest) {
     store.playerSessions.forEach((playerSession, fullSessionId: string) => {
         const trimmedId = fullSessionId.slice(-8);
         const message = playerSession.currentMessage;
-        
+
         if (!messageMap.has(message)) {
             messageMap.set(message, []);
         }
         messageMap.get(message)!.push(trimmedId);
     });
-    
+
     const messageStates = Array.from(messageMap.entries()).map(([message, players]) => ({
         message,
         players
     }));
 
-    return NextResponse.json({ 
+    return NextResponse.json({
         sessions,
         count: sessions.length,
         messageStates,
